@@ -90,8 +90,8 @@ button.btn{font-family:inherit}
 .pend .btn{background:var(--paper)}
 .lnk{font:inherit;font-size:12px;background:none;border:0;padding:0;color:var(--bad);cursor:pointer;text-decoration:underline}
 .new{font-size:10.5px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);margin-left:6px}
-dialog#cap{border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);padding:0;width:min(1040px,calc(100vw - 24px));max-height:calc(100vh - 24px)}
-dialog#cap::backdrop{background:rgba(10,15,20,.55)}
+dialog.dlg{border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);padding:0;width:min(1040px,calc(100vw - 24px));max-height:calc(100vh - 24px)}
+dialog.dlg::backdrop{background:rgba(10,15,20,.55)}
 .cap-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--rule)}
 .cap-h h2{font-family:var(--display);font-size:20px;font-weight:600;margin:0}
 .x{font:inherit;font-size:22px;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 8px}
@@ -112,6 +112,10 @@ dialog#cap::backdrop{background:rgba(10,15,20,.55)}
 .cap-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--rule);flex-wrap:wrap}
 .cap-foot .err{margin:0 auto 0 0}
 .cap-foot .btn{font-size:14px;padding:8px 16px}
+dialog#gh{width:min(520px,calc(100vw - 24px))}
+.gh-b{padding:16px 18px;display:grid;gap:12px}
+.gh-b p{margin:0;font-size:13px;color:var(--muted)}
+.ok{color:var(--ok)}
 @media (max-width:760px){.cap-b{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
 @media (max-width:760px){.rel{grid-template-columns:1fr}.ev p{margin-left:0}.kpis{gap:16px}}
 </style>
@@ -119,9 +123,9 @@ dialog#cap::backdrop{background:rgba(10,15,20,.55)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><span id="today">Ciudad de México</span><span class="load"><span id="srcinfo">Base integrada</span><button type="button" class="btn pri" id="capbtn">+ Agregar desde captura</button><input type="file" id="capfile" accept="image/*" hidden></span></div>
+  <div class="top"><span id="today">Ciudad de México</span><span class="load"><span id="srcinfo">Base integrada</span><button type="button" class="btn" id="ghbtn">Conectar GitHub</button><button type="button" class="btn pri" id="capbtn">+ Agregar desde captura</button><input type="file" id="capfile" accept="image/*" hidden></span></div>
   <p id="err" class="err" hidden></p>
-  <div id="pend" class="pend" hidden><span><b id="pn">0</b> <span id="pnl">notas nuevas guardadas</span> solo en este navegador.</span><button type="button" class="btn" id="exp">Exportar data.json</button><button type="button" class="btn" id="clr">Descartar nuevas</button></div>
+  <div id="pend" class="pend" hidden><span id="pmsg"></span><button type="button" class="btn" id="pub" hidden>Publicar ahora</button><button type="button" class="btn" id="exp" hidden>Exportar data.json</button><button type="button" class="btn" id="clr" hidden>Descartar nuevas</button></div>
   <header class="mast">
     <div><h1>Retail Brief México</h1><p>Aperturas, llegadas de marcas y movimientos en centros comerciales</p></div>
     <div class="kpis"><div><b id="k-n">0</b>Notas</div><div><b id="k-m">0</b>Centros</div><div><b id="k-a">0</b>Llegadas al país</div></div>
@@ -153,7 +157,7 @@ dialog#cap::backdrop{background:rgba(10,15,20,.55)}
 </div>
 
 
-<dialog id="cap" aria-labelledby="capt">
+<dialog id="cap" class="dlg" aria-labelledby="capt">
   <form id="capform" novalidate>
     <div class="cap-h"><h2 id="capt">Nueva nota desde captura</h2><button type="button" class="x" id="capx" aria-label="Cerrar">×</button></div>
     <div class="cap-b">
@@ -186,6 +190,18 @@ dialog#cap::backdrop{background:rgba(10,15,20,.55)}
       </div>
     </div>
     <div class="cap-foot"><p id="caperr" class="err" hidden></p><button type="button" class="btn" id="capcancel">Cancelar</button><button type="submit" class="btn pri" id="capsave">Guardar nota</button></div>
+  </form>
+</dialog>
+<dialog id="gh" class="dlg" aria-labelledby="ght">
+  <form id="ghform" novalidate>
+    <div class="cap-h"><h2 id="ght">Conectar con GitHub</h2><button type="button" class="x" id="ghx" aria-label="Cerrar">×</button></div>
+    <div class="gh-b cap-f">
+      <p>Con esto, cada nota que guardes se publica sola en tu link. Pega aquí tu token de GitHub; se guarda solo en este navegador. Hazlo una vez en cada equipo (Mac, iPhone).</p>
+      <label for="gtok">Token de GitHub<input id="gtok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+      <div class="row2"><label for="gown">Usuario<input id="gown" autocomplete="off" spellcheck="false"></label><label for="grep">Repositorio<input id="grep" autocomplete="off" spellcheck="false"></label></div>
+      <p id="ghst"></p>
+    </div>
+    <div class="cap-foot"><button type="button" class="btn" id="ghoff" hidden>Desconectar</button><button type="button" class="btn" id="ghcancel">Cancelar</button><button type="submit" class="btn pri" id="ghsave">Conectar y probar</button></div>
   </form>
 </dialog>
 <datalist id="mallist"></datalist>
@@ -230,7 +246,7 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const PX={"2104359507275198523":"HTQv0PyXIAAELVg","2104324075933843828":"HTQPlKdWQAIBCNS","2104321553290686678":"HTQNRXLW4AAV3T2","2104346417171186032":"HTQjyZBXwAAZenX","2081134897868198354":"HOGsx65WAAAkeO8","2082245937175384169":"HOWfmLxXMAAXPL3","2082927547587964955":"HOgLEFIXMAEjFtU","1910152921146138955":"GoI55s8XsAAjsVj","1911950716995772656":"GoidC1KXcAAlKg3","1950376584223011053":"GxEhKeSXUAA2A5J","1958328370724553174":"Gy1hRQRWEAAvS09","1964390972348916204":"G0LrLNgXoAA5w1G","1978634517943382402":"G3WFk_QWAAAznDV","1980448428825145675":"G3v3WajXoAAk3Rk","2007179462560100695":"G9rvEoIWoAAgOF7","2007896566334620110":"G917RcBXMAA6cx7","2009052596145934371":"G-GWif0X0AAplvn","2012621853588598901":"G-5E3u0XEAA9kZq","2023559530723029136":"HBUgpWKbcAE1ijr","2034082627569738166":"HDqDXo0bEAENRpV","2039783914873536830":"HE7EOJrXIAAuwRe","2046754509334933988":"HGeIYUGbMAAK8lV","2096359261865726194":"HRfDl3BaUAA1tBK"};
 N.forEach(n=>{const k=PX[n.u.split("/").pop()];if(k)n.x=`https://pbs.twimg.com/media/${k}?format=jpg&name=medium`});
 const hasU=n=>n.u&&n.u!=="#";
-const src=n=>`<span class="meta">${fd(n.d)}${hasU(n)?` · <a href="${esc(n.u)}" target="_blank" rel="noopener">Visita más en social media ↗</a>`:""}${n.p?` · <button type="button" class="lnk" data-del="${esc(n.id)}">Quitar</button>`:""}</span>`;
+const src=n=>`<span class="meta">${fd(n.d)}${hasU(n)?` · <a href="${esc(n.u)}" target="_blank" rel="noopener">Visita más en social media ↗</a>`:""}${n.p&&!n.pub?` · <button type="button" class="lnk" data-del="${esc(n.id)}">Quitar</button>`:""}</span>`;
 const img=n=>{const u=n.f||n.x;if(!u)return"";const st=/\/status\//.test(n.u||"")?n.u:"";const cap=n.f?(n.s?`Foto: ${esc(n.s)}`:""):`Foto: ${esc(n.s||"social media")} en X`;const pic=`<img class="ph" src="${esc(u)}" alt="${esc(n.h)}" decoding="async" referrerpolicy="no-referrer" onerror="window.twFallback&&twFallback(this)">`;return `<figure class="fig" data-tw="${esc(st)}">${hasU(n)?`<a href="${esc(n.u)}" target="_blank" rel="noopener">${pic}</a>`:pic}${cap?`<figcaption>${cap}</figcaption>`:""}</figure>`};
 window.twFallback=function(im){const f=im.closest("figure");if(!f)return;const t=f.dataset.tw;if(!t){f.remove();return}
   f.innerHTML=`<blockquote class="twitter-tweet" data-conversation="none" data-dnt="true" data-lang="es"><a href="${t.replace("x.com","twitter.com")}"></a></blockquote>`;
@@ -283,7 +299,18 @@ function rebuild(){
   document.getElementById("mallist").innerHTML=[...new Set([...order0,...N.map(n=>n.m),...MALLS.map(x=>x[1])])].filter(m=>m!=="Otros").sort().map(m=>`<option value="${esc(m)}">`).join("");
   const ds=N.map(n=>n.d).sort();if(ds.length)document.getElementById("cov").textContent=`Cobertura: ${fd(ds[0])} – ${fd(ds[ds.length-1])}`;
 }
-function pendUI(){const n=N.filter(x=>x.p).length;const b=document.getElementById("pend");b.hidden=!n;document.getElementById("pn").textContent=n;document.getElementById("pnl").textContent=n===1?"nota nueva guardada":"notas nuevas guardadas";clrArm=false;document.getElementById("clr").textContent="Descartar nuevas"}
+function pendUI(){
+  const un=N.filter(x=>x.p&&!x.pub).length,wait=N.filter(x=>x.p&&x.pub).length,con=ghOn(),bar=document.getElementById("pend");
+  bar.hidden=!(un||wait||pubBusy);clrArm=false;F("clr").textContent="Descartar nuevas";
+  const pl=(n,s,pp)=>n+" "+(n===1?s:pp);
+  let m="";
+  if(pubBusy)m="Publicando en tu link…";
+  else if(un)m=pl(un,"nota guardada","notas guardadas")+" solo en este navegador."+(con?(pubErr?" "+pubErr:""):" Conecta GitHub para que se publiquen solas.");
+  else if(wait)m=pl(wait,"nota publicada","notas publicadas")+(wait===1?". Aparecerá":". Aparecerán")+" en el link en 1 a 2 minutos.";
+  F("pmsg").textContent=m;
+  F("pub").hidden=!(un&&con&&!pubBusy);F("exp").hidden=!(un&&!con);F("clr").hidden=!(un&&!pubBusy);
+  F("ghbtn").textContent=con?"GitHub conectado ✓":"Conectar GitHub";
+}
 let clrArm=false;
 document.getElementById("clr").onclick=e=>{if(!clrArm){clrArm=true;e.target.textContent="¿Seguro? Toca otra vez";return}setP([]);rebuild()};
 document.addEventListener("click",e=>{const id=e.target.dataset&&e.target.dataset.del;if(!id)return;setP(getP().filter(x=>x.id!==id));rebuild()});
@@ -293,7 +320,7 @@ document.getElementById("exp").onclick=()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:"application/json"}));
   const a=document.createElement("a");a.href=url;a.download="data.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
 };
-(async()=>{try{const r=await fetch("data.json",{cache:"no-store"});if(!r.ok)return;const j=await r.json();if(Array.isArray(j.notas)&&j.notas.length){BASE_N=j.notas;BASE_A=Array.isArray(j.llegadas)?j.llegadas:[];document.getElementById("srcinfo").textContent="Base: data.json"+(j.actualizado?" · "+fd(j.actualizado.slice(0,10)):"");rebuild()}}catch(e){}})();
+(async()=>{try{const r=await fetch("data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();if(Array.isArray(j.notas)&&j.notas.length){BASE_N=j.notas;BASE_A=Array.isArray(j.llegadas)?j.llegadas:[];document.getElementById("srcinfo").textContent="Base: data.json"+(j.actualizado?" · "+fd(j.actualizado.slice(0,10)):"");rebuild()}}catch(e){}})();
 {const t=new Date().toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("today").textContent=t.charAt(0).toUpperCase()+t.slice(1)+" · Ciudad de México"}
 
 /* ===== Captura → nota ===== */
@@ -401,9 +428,72 @@ F("capform").addEventListener("submit",e=>{
   const note={id:"c"+Date.now().toString(36),d,m,k:F("fk").value,h,t:F("ft").value.trim(),s:hs,u:F("fu").value.trim(),f,rel:F("frel").checked?1:0};
   if(F("fa").checked)note.arr={b:F("fab").value.trim(),st:F("fas").value,c:F("fac").value.trim(),x:[m,note.t.split(/(?<=\.)\s/)[0]].filter(Boolean).join(" · ")};
   if(!setP([...getP(),note]))return fail("Este navegador ya no tiene espacio. Exporta data.json, súbelo a GitHub y vuelve a intentar.");
-  closeCap();cur="Todos";rebuild();window.scrollTo({top:0,behavior:"smooth"});
+  closeCap();cur="Todos";rebuild();window.scrollTo({top:0,behavior:"smooth"});publishPending();
+});
+/* ===== Publicación directa en GitHub ===== */
+const GHK="rb_gh_v1";
+const getGH=()=>{try{return JSON.parse(localStorage.getItem(GHK)||"null")}catch(e){return null}};
+const setGH=v=>{try{v?localStorage.setItem(GHK,JSON.stringify(v)):localStorage.removeItem(GHK);return true}catch(e){return false}};
+const ghOn=()=>{const c=getGH();return !!(c&&c.token&&c.owner&&c.repo)};
+const ghGuess=()=>/\.github\.io$/i.test(location.hostname)?{owner:location.hostname.split(".")[0],repo:decodeURIComponent(location.pathname.split("/")[1]||"")}:{owner:"",repo:""};
+let pubBusy=false,pubErr="";
+async function ghApi(c,path,opt={}){return fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}${path}`,{...opt,cache:"no-store",headers:{Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",Authorization:`Bearer ${c.token}`,...(opt.body?{"Content-Type":"application/json"}:{})}})}
+const b64enc=s=>{const by=new TextEncoder().encode(s);let bin="";for(let i=0;i<by.length;i+=0x8000)bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000));return btoa(bin)};
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+const ghMsg=r=>r.status===401?"El token no es válido o ya expiró. Vuelve a conectar GitHub.":(r.status===403||r.status===404)?"El token no tiene permiso para escribir en este repositorio.":`GitHub respondió con error ${r.status}. Intenta de nuevo en un momento.`;
+async function publishPending(){
+  if(pubBusy||!ghOn())return;const c=getGH();let p=getP();const todo=p.filter(x=>!x.pub);if(!todo.length)return;
+  pubBusy=true;pubErr="";pendUI();
+  try{
+    for(const x of todo){
+      if(x.f&&x.f.startsWith("data:")){
+        const path=`img/${x.id}.jpg`;
+        const r=await ghApi(c,`/contents/${path}`,{method:"PUT",body:JSON.stringify({message:`Foto ${x.id}`,content:x.f.split(",")[1]})});
+        if(!r.ok&&r.status!==422)throw r;
+        x.fp=path;
+      }
+    }
+    const strip=o=>{const{p:_p,pub,fp,arr,...r}=o;return r};
+    for(let attempt=0;;attempt++){
+      const g=await ghApi(c,"/contents/data.json");let sha,data;
+      if(g.status===404){data={notas:BASE_N.map(strip),llegadas:BASE_A.map(strip)}}
+      else if(g.ok){const j=await g.json();sha=j.sha;data=JSON.parse(b64dec(j.content||""));if(!Array.isArray(data.notas))data.notas=[];if(!Array.isArray(data.llegadas))data.llegadas=[]}
+      else throw g;
+      const ni=new Set(data.notas.map(n=>n.id)),ai=new Set(data.llegadas.map(a=>a.id));
+      for(const x of todo){
+        if(!ni.has(x.id)){const n=strip(x);if(x.fp)n.f=x.fp;else if((n.f||"").startsWith("data:"))delete n.f;data.notas.push(n)}
+        if(x.arr&&!ai.has(x.id))data.llegadas.push({...x.arr,id:x.id,d:x.d,u:x.u||""});
+      }
+      data.notas.sort(byDate);data.actualizado=todayISO();
+      const body={message:`Brief: ${todo.length===1?"1 nota nueva":todo.length+" notas nuevas"}`,content:b64enc(JSON.stringify(data))};if(sha)body.sha=sha;
+      const r=await ghApi(c,"/contents/data.json",{method:"PUT",body:JSON.stringify(body)});
+      if(r.ok)break;
+      if((r.status===409||r.status===422)&&attempt<2)continue;
+      throw r;
+    }
+    const done=new Set(todo.map(x=>x.id));setP(getP().map(x=>done.has(x.id)?{...x,pub:1}:x));
+  }catch(e){pubErr=e instanceof Response?ghMsg(e):"Sin conexión con GitHub. Se publicará cuando vuelvas a intentar."}
+  pubBusy=false;rebuild();
+}
+F("pub").onclick=()=>publishPending();
+const ghDlg=F("gh");
+F("ghbtn").onclick=()=>{const c=getGH()||{},g=ghGuess();F("gtok").value="";F("gtok").placeholder=c.token?"Token guardado (déjalo vacío para conservarlo)":"github_pat_…";F("gown").value=c.owner||g.owner;F("grep").value=c.repo||g.repo;F("ghst").textContent="";F("ghst").className="";F("ghoff").hidden=!ghOn();ghDlg.showModal()};
+F("ghx").onclick=F("ghcancel").onclick=()=>ghDlg.close();
+F("ghoff").onclick=()=>{setGH(null);ghDlg.close();rebuild()};
+F("ghform").addEventListener("submit",async e=>{
+  e.preventDefault();const st=F("ghst");st.className="";
+  const old=getGH()||{};const c={token:F("gtok").value.trim()||old.token||"",owner:F("gown").value.trim(),repo:F("grep").value.trim()};
+  if(!c.token){st.className="err";st.textContent="Pega tu token de GitHub.";return}
+  if(!c.owner||!c.repo){st.className="err";st.textContent="Escribe tu usuario y el nombre del repositorio.";return}
+  st.textContent="Probando conexión…";
+  try{const r=await ghApi(c,"");if(!r.ok){st.className="err";st.textContent=r.status===404?"No encontré ese repositorio con este token. Revisa usuario, repositorio y que el token incluya este repo.":ghMsg(r);return}
+    const j=await r.json();if(j.permissions&&j.permissions.push===false){st.className="err";st.textContent="El token puede leer pero no escribir. Dale permiso Contents: Read and write.";return}
+    if(!setGH(c)){st.className="err";st.textContent="Este navegador no permite guardar el token (¿modo privado?).";return}
+    st.className="ok";st.textContent="Conectado. Las notas nuevas se publicarán solas.";setTimeout(()=>{ghDlg.close();rebuild();publishPending()},900);
+  }catch(x){st.className="err";st.textContent="No pude conectar con GitHub. Revisa tu internet."}
 });
 rebuild();
+if(ghOn())publishPending();
 </script>
 
 </body>
