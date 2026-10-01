@@ -123,7 +123,7 @@ dialog#gh{width:min(520px,calc(100vw - 24px))}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><span id="today">Ciudad de México</span><span class="load"><span id="srcinfo">Base integrada</span><button type="button" class="btn" id="ghbtn">Conectar GitHub</button><button type="button" class="btn pri" id="capbtn">+ Agregar desde captura</button><input type="file" id="capfile" accept="image/*" hidden></span></div>
+  <div class="top"><span id="today">Ciudad de México</span><span class="load"><span id="srcinfo">Base integrada</span><button type="button" class="btn pri" id="capbtn">+ Agregar desde captura</button><input type="file" id="capfile" accept="image/*" hidden></span></div>
   <p id="err" class="err" hidden></p>
   <div id="pend" class="pend" hidden><span id="pmsg"></span><button type="button" class="btn" id="pub" hidden>Publicar ahora</button><button type="button" class="btn" id="exp" hidden>Exportar data.json</button><button type="button" class="btn" id="clr" hidden>Descartar nuevas</button></div>
   <header class="mast">
@@ -153,7 +153,7 @@ dialog#gh{width:min(520px,calc(100vw - 24px))}
     <div class="tl" id="tl"></div>
   </section>
 
-  <div class="foot"><span>Fuente: social media. Titulares redactados a partir de publicaciones públicas; fotos con crédito a su autor.</span><span id="cov"></span></div>
+  <div class="foot"><span>Fuente: social media. Titulares redactados a partir de publicaciones públicas; fotos con crédito a su autor.</span><span><span id="cov"></span> · <button type="button" class="lnk" id="ghbtn" style="color:var(--muted)">Publicación</button></span></div>
 </div>
 
 
@@ -194,14 +194,14 @@ dialog#gh{width:min(520px,calc(100vw - 24px))}
 </dialog>
 <dialog id="gh" class="dlg" aria-labelledby="ght">
   <form id="ghform" novalidate>
-    <div class="cap-h"><h2 id="ght">Conectar con GitHub</h2><button type="button" class="x" id="ghx" aria-label="Cerrar">×</button></div>
+    <div class="cap-h"><h2 id="ght">Publicación automática</h2><button type="button" class="x" id="ghx" aria-label="Cerrar">×</button></div>
     <div class="gh-b cap-f">
-      <p>Con esto, cada nota que guardes se publica sola en tu link. Pega aquí tu token de GitHub; se guarda solo en este navegador. Hazlo una vez en cada equipo (Mac, iPhone).</p>
+      <p id="ghintro"></p>
       <label for="gtok">Token de GitHub<input id="gtok" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
       <div class="row2"><label for="gown">Usuario<input id="gown" autocomplete="off" spellcheck="false"></label><label for="grep">Repositorio<input id="grep" autocomplete="off" spellcheck="false"></label></div>
       <p id="ghst"></p>
     </div>
-    <div class="cap-foot"><button type="button" class="btn" id="ghoff" hidden>Desconectar</button><button type="button" class="btn" id="ghcancel">Cancelar</button><button type="submit" class="btn pri" id="ghsave">Conectar y probar</button></div>
+    <div class="cap-foot"><button type="button" class="btn" id="ghoff" hidden>Desconectar</button><button type="button" class="btn" id="ghcancel">Cancelar</button><button type="submit" class="btn pri" id="ghsave">Activar</button></div>
   </form>
 </dialog>
 <datalist id="mallist"></datalist>
@@ -305,11 +305,11 @@ function pendUI(){
   const pl=(n,s,pp)=>n+" "+(n===1?s:pp);
   let m="";
   if(pubBusy)m="Publicando en tu link…";
-  else if(un)m=pl(un,"nota guardada","notas guardadas")+" solo en este navegador."+(con?(pubErr?" "+pubErr:""):" Conecta GitHub para que se publiquen solas.");
+  else if(un)m=pl(un,"nota guardada","notas guardadas")+" solo en este navegador."+(con?(pubErr?" "+pubErr:""):" Activa la publicación automática para que salgan en el link.");
   else if(wait)m=pl(wait,"nota publicada","notas publicadas")+(wait===1?". Aparecerá":". Aparecerán")+" en el link en 1 a 2 minutos.";
   F("pmsg").textContent=m;
-  F("pub").hidden=!(un&&con&&!pubBusy);F("exp").hidden=!(un&&!con);F("clr").hidden=!(un&&!pubBusy);
-  F("ghbtn").textContent=con?"GitHub conectado ✓":"Conectar GitHub";
+  F("pub").hidden=!(un&&!pubBusy);F("pub").textContent=con?"Publicar ahora":"Activar y publicar";F("exp").hidden=!(un&&!con);F("clr").hidden=!(un&&!pubBusy);
+  F("ghbtn").textContent=con?"Publicación automática activa":"Activar publicación automática";
 }
 let clrArm=false;
 document.getElementById("clr").onclick=e=>{if(!clrArm){clrArm=true;e.target.textContent="¿Seguro? Toca otra vez";return}setP([]);rebuild()};
@@ -428,14 +428,14 @@ F("capform").addEventListener("submit",e=>{
   const note={id:"c"+Date.now().toString(36),d,m,k:F("fk").value,h,t:F("ft").value.trim(),s:hs,u:F("fu").value.trim(),f,rel:F("frel").checked?1:0};
   if(F("fa").checked)note.arr={b:F("fab").value.trim(),st:F("fas").value,c:F("fac").value.trim(),x:[m,note.t.split(/(?<=\.)\s/)[0]].filter(Boolean).join(" · ")};
   if(!setP([...getP(),note]))return fail("Este navegador ya no tiene espacio. Exporta data.json, súbelo a GitHub y vuelve a intentar.");
-  closeCap();cur="Todos";rebuild();window.scrollTo({top:0,behavior:"smooth"});publishPending();
+  closeCap();cur="Todos";rebuild();window.scrollTo({top:0,behavior:"smooth"});if(ghOn())publishPending();else openGH(true);
 });
 /* ===== Publicación directa en GitHub ===== */
 const GHK="rb_gh_v1";
 const getGH=()=>{try{return JSON.parse(localStorage.getItem(GHK)||"null")}catch(e){return null}};
 const setGH=v=>{try{v?localStorage.setItem(GHK,JSON.stringify(v)):localStorage.removeItem(GHK);return true}catch(e){return false}};
 const ghOn=()=>{const c=getGH();return !!(c&&c.token&&c.owner&&c.repo)};
-const ghGuess=()=>/\.github\.io$/i.test(location.hostname)?{owner:location.hostname.split(".")[0],repo:decodeURIComponent(location.pathname.split("/")[1]||"")}:{owner:"",repo:""};
+const ghGuess=()=>/\.github\.io$/i.test(location.hostname)?{owner:location.hostname.split(".")[0],repo:decodeURIComponent(location.pathname.split("/")[1]||"")}:{owner:"ordazsuno",repo:"Retail-Brief-M-xico"};
 let pubBusy=false,pubErr="";
 async function ghApi(c,path,opt={}){return fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}${path}`,{...opt,cache:"no-store",headers:{Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",Authorization:`Bearer ${c.token}`,...(opt.body?{"Content-Type":"application/json"}:{})}})}
 const b64enc=s=>{const by=new TextEncoder().encode(s);let bin="";for(let i=0;i<by.length;i+=0x8000)bin+=String.fromCharCode.apply(null,by.subarray(i,i+0x8000));return btoa(bin)};
@@ -475,9 +475,10 @@ async function publishPending(){
   }catch(e){pubErr=e instanceof Response?ghMsg(e):"Sin conexión con GitHub. Se publicará cuando vuelvas a intentar."}
   pubBusy=false;rebuild();
 }
-F("pub").onclick=()=>publishPending();
+F("pub").onclick=()=>ghOn()?publishPending():openGH(true);
 const ghDlg=F("gh");
-F("ghbtn").onclick=()=>{const c=getGH()||{},g=ghGuess();F("gtok").value="";F("gtok").placeholder=c.token?"Token guardado (déjalo vacío para conservarlo)":"github_pat_…";F("gown").value=c.owner||g.owner;F("grep").value=c.repo||g.repo;F("ghst").textContent="";F("ghst").className="";F("ghoff").hidden=!ghOn();ghDlg.showModal()};
+const openGH=first=>{const c=getGH()||{},g=ghGuess();F("ghintro").textContent=first?"Tu nota ya está guardada. Para que se publique sola en tu link, pega tu token de GitHub. Solo se pide una vez en este equipo; después todo es automático.":"Pega tu token de GitHub. Se guarda solo en este navegador; después cada nota se publica sola.";F("gtok").value="";F("gtok").placeholder=c.token?"Token guardado (déjalo vacío para conservarlo)":"github_pat_…";F("gown").value=c.owner||g.owner;F("grep").value=c.repo||g.repo;F("ghst").textContent="";F("ghst").className="";F("ghoff").hidden=!ghOn();ghDlg.showModal()};
+F("ghbtn").onclick=()=>openGH(false);
 F("ghx").onclick=F("ghcancel").onclick=()=>ghDlg.close();
 F("ghoff").onclick=()=>{setGH(null);ghDlg.close();rebuild()};
 F("ghform").addEventListener("submit",async e=>{
@@ -489,7 +490,7 @@ F("ghform").addEventListener("submit",async e=>{
   try{const r=await ghApi(c,"");if(!r.ok){st.className="err";st.textContent=r.status===404?"No encontré ese repositorio con este token. Revisa usuario, repositorio y que el token incluya este repo.":ghMsg(r);return}
     const j=await r.json();if(j.permissions&&j.permissions.push===false){st.className="err";st.textContent="El token puede leer pero no escribir. Dale permiso Contents: Read and write.";return}
     if(!setGH(c)){st.className="err";st.textContent="Este navegador no permite guardar el token (¿modo privado?).";return}
-    st.className="ok";st.textContent="Conectado. Las notas nuevas se publicarán solas.";setTimeout(()=>{ghDlg.close();rebuild();publishPending()},900);
+    st.className="ok";st.textContent="Listo. Desde ahora cada nota se publica sola.";setTimeout(()=>{ghDlg.close();rebuild();publishPending()},900);
   }catch(x){st.className="err";st.textContent="No pude conectar con GitHub. Revisa tu internet."}
 });
 rebuild();
